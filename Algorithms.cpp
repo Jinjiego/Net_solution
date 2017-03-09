@@ -26,6 +26,9 @@ vector<int> Algorithms::Dijkstra(const vector<vector<Link_Info>> &G_Matrix,
 	vector<int> path_pre(Nodes);
 
 	vector<Link_Info> D(Nodes, Link_Info(0,INF));
+	//D[i].capacity 表示当前最短路上面的最大可允许流量
+	//D[i].capacity 表示当当前最短路径cost
+
 	for (int i = 0; i < Nodes; i++){
 		selected[i] = false;
 		D[i] = G_Matrix[u][i];
@@ -35,19 +38,19 @@ vector<int> Algorithms::Dijkstra(const vector<vector<Link_Info>> &G_Matrix,
 	selected[u] = true;
 	for (int i = 0; i < Nodes; i++){
 		int min = INF;
-		for (int w = 0; w < Nodes; w++){
-			if (!selected[w] && D[w].unit_rent_cost < min && Cond(demand, D[w].capacity)){//&& demand <= D[w].capacity
+		for (int w = 0; w < Nodes; w++){//在满足流量需求的边中选择一条代价最小的
+			bool filter = Cond(demand, D[w].capacity);
+			if (!selected[w] && D[w].unit_rent_cost < min && filter){//&& demand <= D[w].capacity
 				min = D[w].unit_rent_cost; x = w;
 			}
 		}
-		selected[x] = true;
+		selected[x] = true; if (u == 41) cout<<demand<<"," << x << " selected!\n";
 		for (int s = 0; s < Nodes; s++){
 			if (!selected[s] && min + G_Matrix[x][s].unit_rent_cost < D[s].unit_rent_cost){
 				D[s].unit_rent_cost = min + G_Matrix[x][s].unit_rent_cost;
-				if (x == 44||s==43){
-					int stop = 1;
-				}
+				
 				D[s].capacity = this->min_num_not_equal_x({ D[s].capacity, D[x].capacity, G_Matrix[x][s].capacity }, 0);
+				
 				path_pre[s] = x;
 			}
 		} 
@@ -199,6 +202,9 @@ vector<vector<int>>  Algorithms::solver_1(vector<vector<Link_Info>> &G_Matrix,
 	//                           }; //按流量选取路径规则
 	for (int m = 0; m < capacity_sorted.size(); m++){
 		int ser_id=capacity_sorted[m].first;
+		if (ser_id == 41){
+			int stop = 1;
+		 }
 		for (int i = 0; i < Customers.size(); ++i){
 			if (Customers[i].second == 0)continue;
 			consumer_netnode_id = Customers[i].first;
@@ -208,7 +214,9 @@ vector<vector<int>>  Algorithms::solver_1(vector<vector<Link_Info>> &G_Matrix,
 
 			tmp_path=this->Dijkstra(G_Matrix_copy,ser_id,
 				consumer_netnode_id, consumer_netnode_demand, //流量需求
-				[](int demand, int capacity)->int{return demand <= capacity; }) ;
+				[](const int demand, int &capacity)->int{
+				if (demand > capacity){ capacity = 0; }
+				return demand <= capacity; }) ;
 
 			maxmal_capacity_alowed = *(tmp_path.end() - max_flow_alowed_id);
 			minmal_total_rent_cost = *(tmp_path.end() - min_rent_cost_id);
